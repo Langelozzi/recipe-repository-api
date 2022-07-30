@@ -44,7 +44,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "start": "tsc && node ./build/server.js"
+    "start": "node ./build/server.js"
   },
   "author": "Lucas Angelozzi",
   "license": "ISC"
