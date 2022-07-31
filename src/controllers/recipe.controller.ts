@@ -2,6 +2,7 @@ import { RecipeModel } from '../models/recipe.model';
 import { Request, Response } from 'express';
 import { AuthController } from './auth.controller';
 import { UserModel } from '../models/user.model';
+import * as fs from 'fs';
 
 export class RecipeController {
     authController: AuthController = new AuthController();
@@ -109,6 +110,17 @@ export class RecipeController {
     }
 
     public async deleteRecipeById( req: Request, res: Response ) {
+        RecipeModel.findById( req.params.id, ( err: any, data: any ) => {
+            if ( err ) {
+                res.send( err );
+            }
+
+            for ( const path of data.imagePaths ) {
+                console.log( path );
+                fs.unlinkSync( path );
+            }
+        } );
+        
         RecipeModel.findOneAndDelete( { _id: req.params.id }, ( err: any ) => {
             if ( err ) {
                 res.send( err );
@@ -137,8 +149,6 @@ export class RecipeController {
 
     public async getImage( req: Request, res: Response ) {
         const imgPath = req.body.path;
-
-        console.log( imgPath );
 
         res.sendFile( imgPath );
     }
