@@ -21,6 +21,6 @@ export class RecipeRoutes {
 
         app.delete( '/api/recipes/:id', verifyToken, this.recipeController.deleteRecipeById );
 
-        app.get( '/api/img', verifyToken, this.recipeController.getImage );
+        app.post( '/api/img', verifyToken, this.recipeController.getImage );
     }
 }
