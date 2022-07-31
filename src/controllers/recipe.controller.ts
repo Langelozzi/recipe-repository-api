@@ -7,6 +7,16 @@ export class RecipeController {
     authController: AuthController = new AuthController();
 
     public async create( req: Request, res: Response ) {
+        const imagePaths: string[] = [];
+        
+        if ( req.files ) {
+            const images: any = req.files;
+            
+            for ( const image of images ) {
+                imagePaths.push( image.path );
+            }
+        }
+
         // getting recipe information from request body
         const { name, ingredients, steps, favourite, prepTime, cookTime, ovenTemp, notes, cuisine, facts, tags, description } = req.body;
         
@@ -28,7 +38,8 @@ export class RecipeController {
             cuisine,
             facts,
             tags,
-            description
+            description,
+            imagePaths
         } );
 
         // save recipe and return it if no errors
