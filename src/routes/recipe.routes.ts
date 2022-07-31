@@ -1,6 +1,6 @@
 import { RecipeController } from '../controllers/recipe.controller';
 import { verifyToken } from '../helpers/auth/verifyToken';
-import { upload } from '../helpers/utils/createUpload';
+import { upload } from '../uploads/createUpload';
 
 export class RecipeRoutes {
     recipeController: RecipeController = new RecipeController();
@@ -21,6 +21,6 @@ export class RecipeRoutes {
 
         app.delete( '/api/recipes/:id', verifyToken, this.recipeController.deleteRecipeById );
 
-        // app.post( '/api/recipes/upload', verifyToken, upload.array( 'files' ), this.recipeController.uploadRecipe );
+        app.get( '/api/img', verifyToken, this.recipeController.getImage );
     }
 }

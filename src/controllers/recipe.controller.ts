@@ -81,6 +81,13 @@ export class RecipeController {
                 res.send( err );
             }
 
+            if ( data.imagePaths ) {
+                for ( const path of data.imagePaths ) {
+                    res.sendFile( `${path}` );
+                    break;
+                }
+            }
+
             res.status( 200 ).json( {
                 ok: true,
                 recipe: data
@@ -126,5 +133,13 @@ export class RecipeController {
                 recipes: data
             } );
         } );
+    }
+
+    public async getImage( req: Request, res: Response ) {
+        const imgPath = req.body.path;
+
+        console.log( imgPath );
+
+        res.sendFile( imgPath );
     }
 }

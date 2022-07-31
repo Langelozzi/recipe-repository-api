@@ -1,5 +1,5 @@
 import multer from 'multer';
-import { UserModel } from '../../models/user.model';
+import { UserModel } from '../models/user.model';
 import * as fs from 'fs';
 import path from 'path';
 
@@ -9,7 +9,7 @@ function saveUploadedImage() {
         destination: async function ( req, file, cb ) {
             const currentUser = await UserModel.findOne( { _id: req.user } );
 
-            const userUploadsDir = path.join( `src/uploads/${ currentUser?._id }` );
+            const userUploadsDir = path.join( __dirname + `/${ currentUser?._id }` );
 
             if ( !fs.existsSync( userUploadsDir ) ) {
                 fs.mkdirSync( userUploadsDir );
