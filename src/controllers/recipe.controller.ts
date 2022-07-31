@@ -116,7 +116,6 @@ export class RecipeController {
             }
 
             for ( const path of data.imagePaths ) {
-                console.log( path );
                 fs.unlinkSync( path );
             }
         } );
