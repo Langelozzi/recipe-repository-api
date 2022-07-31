@@ -15,12 +15,12 @@ const RecipeSchema = new Schema( {
     
     ingredients: {
         type: Array,
-        required: true
+        required: false
     },
     
     steps: {
         type: Array,
-        required: true
+        required: false
     },
 
     favourite: {
@@ -58,6 +58,10 @@ const RecipeSchema = new Schema( {
     },
     description: {
         type: String,
+        required: false
+    },
+    imagePaths: {
+        type: Array,
         required: false
     }
 

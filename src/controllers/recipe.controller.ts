@@ -2,11 +2,22 @@ import { RecipeModel } from '../models/recipe.model';
 import { Request, Response } from 'express';
 import { AuthController } from './auth.controller';
 import { UserModel } from '../models/user.model';
+import * as fs from 'fs';
 
 export class RecipeController {
     authController: AuthController = new AuthController();
 
     public async create( req: Request, res: Response ) {
+        const imagePaths: string[] = [];
+        
+        if ( req.files ) {
+            const images: any = req.files;
+            
+            for ( const image of images ) {
+                imagePaths.push( image.path );
+            }
+        }
+
         // getting recipe information from request body
         const { name, ingredients, steps, favourite, prepTime, cookTime, ovenTemp, notes, cuisine, facts, tags, description } = req.body;
         
@@ -28,7 +39,8 @@ export class RecipeController {
             cuisine,
             facts,
             tags,
-            description
+            description,
+            imagePaths
         } );
 
         // save recipe and return it if no errors
@@ -70,6 +82,13 @@ export class RecipeController {
                 res.send( err );
             }
 
+            if ( data.imagePaths ) {
+                for ( const path of data.imagePaths ) {
+                    res.sendFile( `${path}` );
+                    break;
+                }
+            }
+
             res.status( 200 ).json( {
                 ok: true,
                 recipe: data
@@ -91,6 +110,17 @@ export class RecipeController {
     }
 
     public async deleteRecipeById( req: Request, res: Response ) {
+        RecipeModel.findById( req.params.id, ( err: any, data: any ) => {
+            if ( err ) {
+                res.send( err );
+            }
+
+            for ( const path of data.imagePaths ) {
+                console.log( path );
+                fs.unlinkSync( path );
+            }
+        } );
+        
         RecipeModel.findOneAndDelete( { _id: req.params.id }, ( err: any ) => {
             if ( err ) {
                 res.send( err );
@@ -115,5 +145,11 @@ export class RecipeController {
                 recipes: data
             } );
         } );
+    }
+
+    public async getImage( req: Request, res: Response ) {
+        const imgPath = req.body.path;
+
+        res.sendFile( imgPath );
     }
 }
