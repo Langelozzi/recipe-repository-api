@@ -110,9 +110,10 @@ export class RecipeController {
     }
 
     public async deleteRecipeById( req: Request, res: Response ) {
+        const currentUser = await UserModel.findOne( { _id: req.user } );
         const allImagePaths: string[] = [];
         
-        RecipeModel.find( {}, ( err: any, recipes: any ) => {
+        RecipeModel.find( { userId: currentUser?._id }, ( err: any, recipes: any ) => {
             if ( err ) {
                 res.send( err );
             }
