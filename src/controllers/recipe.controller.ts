@@ -110,14 +110,37 @@ export class RecipeController {
     }
 
     public async deleteRecipeById( req: Request, res: Response ) {
+        const currentUser = await UserModel.findOne( { _id: req.user } );
+        const allImagePaths: string[] = [];
+        
+        RecipeModel.find( { userId: currentUser?._id }, ( err: any, recipes: any ) => {
+            if ( err ) {
+                res.send( err );
+            }
+            
+            for ( const recipe of recipes ) {
+                // only add image paths of recipes that are not the one being deleted
+                if ( recipe._id != req.params.id && recipe.imagePaths && recipe.imagePaths.length > 0 ) {
+                    for ( const path of recipe.imagePaths ) {
+                        allImagePaths.push( path );
+                    }
+                }
+                
+            }
+        } );
+        
         RecipeModel.findById( req.params.id, ( err: any, data: any ) => {
             if ( err ) {
                 res.send( err );
             }
 
-            for ( const path of data.imagePaths ) {
-                console.log( path );
-                fs.unlinkSync( path );
+            // if there are image paths then delete the photo if the photo exists on the server
+            if ( data.imagePaths && data.imagePaths.length > 0 ) {
+                for ( const path of data.imagePaths ) {
+                    if ( fs.existsSync( path ) && !allImagePaths.includes( path ) ) {
+                        fs.unlinkSync( path );
+                    }
+                }
             }
         } );
         
