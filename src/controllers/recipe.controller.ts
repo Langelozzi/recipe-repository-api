@@ -2,49 +2,91 @@ import { RecipeModel } from '../models/recipe.model';
 import { Request, Response } from 'express';
 import { AuthController } from './auth.controller';
 import { UserModel } from '../models/user.model';
+import { readFile } from 'fs/promises';
+import { imagekit } from '../helpers/utils/createImageKit';
 import * as fs from 'fs';
+
 
 export class RecipeController {
     authController: AuthController = new AuthController();
 
     public async create( req: Request, res: Response ) {
-        const imagePaths: string[] = [];
-        
-        if ( req.files ) {
-            const images: any = req.files;
-            
-            for ( const image of images ) {
-                imagePaths.push( image.path );
-            }
-        }
-
-        // getting recipe information from request body
-        const { name, ingredients, steps, favourite, prepTime, cookTime, ovenTemp, notes, cuisine, facts, tags, description } = req.body;
-        
+        const imageData: object[] = [];
         // getting current user id from database using request user which is set when verifyToken is ran
         const currentUser = await UserModel.findOne( { _id: req.user } );
         const userId = currentUser?._id;
+        
+        try {
+            if ( req.files ) {
+                const images: any = req.files;
 
-        // create new recipe
-        const newRecipe = new RecipeModel( {
-            userId,
-            name,
-            ingredients,
-            steps,
-            favourite,
-            prepTime,
-            cookTime,
-            ovenTemp,
-            notes,
-            cuisine,
-            facts,
-            tags,
-            description,
-            imagePaths
-        } );
+                // creates the users folder if it doesn't already exist
+                // imagekit simply doesn't create a new one if it already exists
+                const newFolder = await imagekit.createFolder({
+                    folderName: `${ userId }`,
+                    parentFolderPath: '/'
+                })
+                
+                for ( const image of images ) {
+                    // reading the file that was saved to the server file system
+                    const file = await readFile( image.path );
+
+                    // uploading the image to the users imagekit folder
+                    const uploadedImage = await imagekit.upload({
+                        file: file,
+                        fileName: `${req.body.name}`,
+                        folder: `${userId}`
+                    })
+
+                    // saving the image urls to the recipe attribute
+                    imageData.push( uploadedImage );
+
+                    // fs.readFile( image.path, ( err, data ) => {
+                    //     if ( err ) console.log( err );
+
+                    //     imagekit.upload({
+                    //         file: data,
+                    //         fileName: `${req.body.name}`,
+                    //         folder: `${userId}`
+                    //     }, ( err: any, data: any ) => {
+                    //         if ( err ) {
+                    //             res.send( err );
+                    //         } 
+                        
+                    //     })
+                    // })
+
+                    // removing the file from the server file system once it is uploaded
+                    if ( fs.existsSync( image.path ) ) {
+                        fs.unlinkSync( image.path );
+                    }
+
+                }
+            }
+            
+            // getting recipe information from request body
+            const { name, ingredients, steps, favourite, prepTime, cookTime, ovenTemp, notes, cuisine, facts, tags, description } = req.body;
+            
+            
+            // create new recipe
+            const newRecipe = new RecipeModel( {
+                userId,
+                name,
+                ingredients,
+                steps,
+                favourite,
+                prepTime,
+                cookTime,
+                ovenTemp,
+                notes,
+                cuisine,
+                facts,
+                tags,
+                description,
+                imageData
+            } );
 
         // save recipe and return it if no errors
-        try {
             const savedRecipe = await newRecipe.save();
 
             res.status( 201 ).json( {
@@ -80,13 +122,6 @@ export class RecipeController {
         RecipeModel.findById( req.params.id, ( err: any, data: any ) => {
             if ( err ) {
                 res.send( err );
-            }
-
-            if ( data.imagePaths ) {
-                for ( const path of data.imagePaths ) {
-                    res.sendFile( `${path}` );
-                    break;
-                }
             }
 
             res.status( 200 ).json( {
@@ -135,14 +170,10 @@ export class RecipeController {
             }
 
             // if there are image paths then delete the photo if the photo exists on the server
-            if ( data.imagePaths && data.imagePaths.length > 0 ) {
-                for ( const path of data.imagePaths ) {
-                    if ( fs.existsSync( path ) && !allImagePaths.includes( path ) ) {
-                        fs.unlinkSync( path );
-                    }
-                }
+            for ( const image of data.imageData ) {
+                imagekit.deleteFile( image.fileId );
             }
-        } );
+        } );    
         
         RecipeModel.findOneAndDelete( { _id: req.params.id }, ( err: any ) => {
             if ( err ) {
@@ -168,11 +199,5 @@ export class RecipeController {
                 recipes: data
             } );
         } );
-    }
-
-    public async getImage( req: Request, res: Response ) {
-        const imgPath = req.body.path;
-
-        res.sendFile( imgPath );
     }
 }
