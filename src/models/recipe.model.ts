@@ -60,7 +60,7 @@ const RecipeSchema = new Schema( {
         type: String,
         required: false
     },
-    imagePaths: {
+    imageData: {
         type: Array,
         required: false
     }
