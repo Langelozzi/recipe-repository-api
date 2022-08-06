@@ -5,6 +5,7 @@ import { UserModel } from '../models/user.model';
 import { readFile } from 'fs/promises';
 import { imagekit } from '../helpers/utils/createImageKit';
 import * as fs from 'fs';
+import { logger } from '../helpers/utils/logger';
 
 
 export class RecipeController {
@@ -22,39 +23,24 @@ export class RecipeController {
 
                 // creates the users folder if it doesn't already exist
                 // imagekit simply doesn't create a new one if it already exists
-                const newFolder = await imagekit.createFolder({
+                const newFolder = await imagekit.createFolder( {
                     folderName: `${ userId }`,
                     parentFolderPath: '/'
-                })
+                } );
                 
                 for ( const image of images ) {
                     // reading the file that was saved to the server file system
                     const file = await readFile( image.path );
 
                     // uploading the image to the users imagekit folder
-                    const uploadedImage = await imagekit.upload({
+                    const uploadedImage = await imagekit.upload( {
                         file: file,
                         fileName: `${req.body.name}`,
                         folder: `${userId}`
-                    })
+                    } );
 
                     // saving the image urls to the recipe attribute
                     imageData.push( uploadedImage );
-
-                    // fs.readFile( image.path, ( err, data ) => {
-                    //     if ( err ) console.log( err );
-
-                    //     imagekit.upload({
-                    //         file: data,
-                    //         fileName: `${req.body.name}`,
-                    //         folder: `${userId}`
-                    //     }, ( err: any, data: any ) => {
-                    //         if ( err ) {
-                    //             res.send( err );
-                    //         } 
-                        
-                    //     })
-                    // })
 
                     // removing the file from the server file system once it is uploaded
                     if ( fs.existsSync( image.path ) ) {
@@ -86,7 +72,7 @@ export class RecipeController {
                 imageData
             } );
 
-        // save recipe and return it if no errors
+            // save recipe and return it if no errors
             const savedRecipe = await newRecipe.save();
 
             res.status( 201 ).json( {
@@ -95,7 +81,9 @@ export class RecipeController {
                 recipe: savedRecipe
             } );
         } catch ( e: any ) {
-            res.status( 500 ).json( {
+            logger( e.message, 404, 'Recipe creation failed' );
+
+            res.status( 404 ).json( {
                 ok: false,
                 message: e.message
             } );
@@ -107,6 +95,7 @@ export class RecipeController {
 
         RecipeModel.find( { userId: currentUser?._id }, ( err: any, data: any ) => {
             if ( err ) {
+                logger( err.message, undefined, `No user with id ${ currentUser?._id }` );
                 res.send( err );
             }
             
@@ -121,6 +110,7 @@ export class RecipeController {
     public async getRecipeById( req: Request, res: Response ) {
         RecipeModel.findById( req.params.id, ( err: any, data: any ) => {
             if ( err ) {
+                logger( err.message, undefined, `No recipe with id ${ req.params.id }` );
                 res.send( err );
             }
 
@@ -135,6 +125,7 @@ export class RecipeController {
         RecipeModel.findOneAndUpdate( { _id: req.body._id }, req.body, { new: true }, ( err: any, data: any ) => {
             if ( err ) {
                 res.send( err );
+                logger( err.message, undefined, 'Recipe update failed' );
             } 
 
             res.status( 200 ).json( {
@@ -150,39 +141,46 @@ export class RecipeController {
         
         RecipeModel.find( { userId: currentUser?._id }, ( err: any, recipes: any ) => {
             if ( err ) {
-                res.send( err );
+                logger( err.message, undefined, `No user with id ${ currentUser?._id }` );
+            } else {
+                for ( const recipe of recipes ) {
+                    // only add image paths of recipes that are not the one being deleted
+                    if ( recipe._id != req.params.id && recipe.imagePaths && recipe.imagePaths.length > 0 ) {
+                        for ( const path of recipe.imagePaths ) {
+                            allImagePaths.push( path );
+                        }
+                    }
+                    
+                }
             }
             
-            for ( const recipe of recipes ) {
-                // only add image paths of recipes that are not the one being deleted
-                if ( recipe._id != req.params.id && recipe.imagePaths && recipe.imagePaths.length > 0 ) {
-                    for ( const path of recipe.imagePaths ) {
-                        allImagePaths.push( path );
-                    }
-                }
-                
-            }
         } );
         
         RecipeModel.findById( req.params.id, ( err: any, data: any ) => {
             if ( err ) {
-                res.send( err );
+                logger( err.message, undefined, `No recipe with id ${ req.params.id }` );
+            } else {
+                // if there are image paths then delete the photo if the photo exists on the server
+                try {
+                    for ( const image of data.imageData ) {
+                        imagekit.deleteFile( image.fileId );
+                    }
+                } catch( e: any ) {
+                    logger( e.message, undefined, 'No property "imageData" on recipe' );
+                }
             }
 
-            // if there are image paths then delete the photo if the photo exists on the server
-            for ( const image of data.imageData ) {
-                imagekit.deleteFile( image.fileId );
-            }
         } );    
         
         RecipeModel.findOneAndDelete( { _id: req.params.id }, ( err: any ) => {
             if ( err ) {
+                logger( err.message, undefined, 'Recipe deletion failed' );
                 res.send( err );
-            } 
-
-            res.status( 200 ).json( {
-                ok: true
-            } );
+            } else {
+                res.status( 200 ).json( {
+                    ok: true
+                } );
+            }
         } );
     }
 
@@ -191,6 +189,7 @@ export class RecipeController {
 
         RecipeModel.find( { userId: currentUser?._id, favourite: true }, ( err: any, data: any ) => {
             if ( err ) {
+                logger( err.message, undefined, 'Failed to find favourite recipes' );
                 res.send( err );
             }
             
