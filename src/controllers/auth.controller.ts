@@ -5,6 +5,7 @@ import { generateAccessToken } from '../helpers/auth/generateAccessToken';
 import { loginValidation, registerValidation } from '../helpers/utils/validation';
 import { UserModel } from '../models/user.model';
 import * as jwt from 'jsonwebtoken';
+import { logger } from '../helpers/utils/logger';
 
 export class AuthController {
 
@@ -12,12 +13,14 @@ export class AuthController {
         // Validate the data before we create the user
         const { error } = registerValidation( req.body );
         if ( error ) {
+            logger( error?.details[0].message, undefined, 'Register validation failed' );
             return res.status( 400 ).send( error?.details[0].message );
         }
 
         // Checking if the user already exists
         const emailExist = await UserModel.findOne( { email: req.body.email } );
         if ( emailExist ) {
+            logger( 'This email is already registered', 400 );
             return res.status( 400 ).send( 'Email already exists' );
         }
 
@@ -37,7 +40,8 @@ export class AuthController {
         try {
             const savedUser = await user.save();
             res.send( savedUser );
-        } catch( err ) {
+        } catch( err: any ) {
+            logger( err.message, undefined, 'Failed to save new user' );
             res.status( 400 ).send( err );
         }
     }
@@ -46,18 +50,21 @@ export class AuthController {
         // Validate the data before we create the user
         const { error } = loginValidation( req.body );
         if ( error ) {
+            logger( error?.details[0].message, undefined, 'Login validation failed' );
             return res.status( 400 ).send( error?.details[0].message );
         }
 
         const user = await UserModel.findOne( { email: req.body.email } );
         // Checking if a user exists with that email
         if ( !user ) {
+            logger( 'No account registered with that email', undefined );
             return res.status( 400 ).send( 'No account registered with that email' );
         }
 
         // Checking if the password is correct
         const validPass = await bcrypt.compare( req.body.password, user.password );
         if ( !validPass ) {
+            logger( 'Password is incorrect', undefined );
             return res.status( 400 ).send( 'Incorrect Password' );
         }
 
@@ -86,15 +93,16 @@ export class AuthController {
             const verified = jwt.verify( token, <jwt.Secret>process.env.ACCESS_TOKEN_SECRET );
             req.user = <any>verified;
 
-            res.status( 200 ).json({
+            res.status( 200 ).json( {
                 ok: true,
                 valid: true
-            })
-        } catch( err ) {
-            res.status( 401 ).send( 'Invalid Token' ).json({
+            } );
+        } catch( err: any ) {
+            logger( err.message, undefined, 'Login failed, invalid token' );
+            res.status( 401 ).send( 'Invalid Token' ).json( {
                 ok: false,
                 valid: false
-            });
+            } );
         }
     }
 }
