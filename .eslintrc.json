@@ -7,7 +7,7 @@
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended"
     ],
-    "parser": "@typescript-eslint/parser",
+    "parser": "@angular-eslint/template-parser",
     "parserOptions": {
         "ecmaVersion": "latest",
         "sourceType": "module"
@@ -16,13 +16,8 @@
         "@typescript-eslint"
     ],
     "rules": {
-        "indent": [
-            "warn",
-            4
-        ],
         "linebreak-style": [
-            "warn",
-            "windows"
+            "off"
         ],
         "quotes": [
             "warn",
@@ -46,7 +41,58 @@
         ],
         "@typescript-eslint/no-explicit-any": [
             "off"
+        ],
+        "@typescript-eslint/no-empty-function": [
+            "off"
+        ],
+        "@typescript-eslint/no-unused-vars": [
+            "off"
         ]
-
-    }
+    },
+    "overrides": [
+        {
+            "files": [
+                "*.ts"
+            ],
+            "parser": "@typescript-eslint/parser",
+            "rules": {
+                "indent": [
+                    "warn",
+                    4
+                ],
+                "linebreak-style": [
+                    "off"
+                ],
+                "quotes": [
+                    "warn",
+                    "single"
+                ],
+                "semi": [
+                    "warn",
+                    "always"
+                ],
+                "array-bracket-spacing": [
+                    "warn",
+                    "always"
+                ],
+                "space-in-parens": [
+                    "warn",
+                    "always"
+                ],
+                "object-curly-spacing": [
+                    "warn",
+                    "always"
+                ],
+                "@typescript-eslint/no-explicit-any": [
+                    "off"
+                ],
+                "@typescript-eslint/no-empty-function": [
+                    "off"
+                ],
+                "@typescript-eslint/no-unused-vars": [
+                    "off"
+                ]
+            }
+        }
+    ]
 }
