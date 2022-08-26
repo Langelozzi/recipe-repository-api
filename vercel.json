@@ -3,14 +3,14 @@
     "name": "recipe-repository-api",
     "builds": [
         {
-            "src": "build/server.js",
+            "src": "build/*.js",
             "use": "@vercel/node"
         }
     ],
     "routes": [
         {
             "src": "/(.*)",
-            "dest": "/"
+            "dest": "build/server.js"
         }
     ]
 }
