@@ -7,13 +7,13 @@ export class AuthRoutes {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     constructor() {}
 
-    public routes( router: any ): void {
-        router.post( '/auth/register', this.authController.registerUser );
+    public routes( app: any ): void {
+        app.post( '/api/auth/register', this.authController.registerUser );
 
-        router.post( '/auth/login', this.authController.loginUser );
+        app.post( '/api/auth/login', this.authController.loginUser );
 
-        router.get( '/auth/current-user', verifyToken, this.authController.getCurrentUser );
+        app.get( '/api/auth/current-user', verifyToken, this.authController.getCurrentUser );
 
-        router.get( '/auth/verify-token', this.authController.verifyToken );
+        app.get( '/api/auth/verify-token', this.authController.verifyToken );
     }
 }
