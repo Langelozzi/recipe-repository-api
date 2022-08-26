@@ -1,16 +1,8 @@
 {
-    "version": 2,
-    "name": "recipe-repository-api",
-    "builds": [
+    "rewrites": [
         {
-            "src": "server.js",
-            "use": "@vercel/node"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/build/(.*)",
-            "dest": "/server.js"
+            "source": "/build/(.*)",
+            "destination": "/build"
         }
     ]
 }
