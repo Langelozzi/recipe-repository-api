@@ -11,22 +11,28 @@ import { IndexRoutes } from './routes/index.routes';
 require( 'dotenv' ).config();
 class App {
     public app: express.Application;
+    public router: express.Router;
     public indexRoutes: IndexRoutes = new IndexRoutes();
     public authRoutes: AuthRoutes = new AuthRoutes();
     public recipeRoutes: RecipeRoutes = new RecipeRoutes();
     
     constructor() {
         this.app = express();
+        this.router = express.Router();
+
         this.config();
         connectToDb();
-        this.indexRoutes.routes( this.app );
-        this.authRoutes.routes( this.app );
-        this.recipeRoutes.routes( this.app );
     }
 
     private config(): void {
         this.app.use( bodyParser.json() );
         this.app.use( ( req, res, next ) => { next(); }, cors( {} ) );
+
+        this.indexRoutes.routes( this.router );
+        this.authRoutes.routes( this.router );
+        this.recipeRoutes.routes( this.router );
+        
+        this.app.use( '/.netlify/functions/api', this.router );
     }
 }
 
