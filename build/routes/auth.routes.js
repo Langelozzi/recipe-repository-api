@@ -8,11 +8,11 @@ class AuthRoutes {
     constructor() {
         this.authController = new auth_controller_1.AuthController();
     }
-    routes(router) {
-        router.post('/auth/register', this.authController.registerUser);
-        router.post('/auth/login', this.authController.loginUser);
-        router.get('/auth/current-user', verifyToken_1.verifyToken, this.authController.getCurrentUser);
-        router.get('/auth/verify-token', this.authController.verifyToken);
+    routes(app) {
+        app.post('/api/auth/register', this.authController.registerUser);
+        app.post('/api/auth/login', this.authController.loginUser);
+        app.get('/api/auth/current-user', verifyToken_1.verifyToken, this.authController.getCurrentUser);
+        app.get('/api/auth/verify-token', this.authController.verifyToken);
     }
 }
 exports.AuthRoutes = AuthRoutes;

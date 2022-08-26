@@ -8,17 +8,17 @@ export class RecipeRoutes {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     constructor() {}
 
-    public routes( router: any ): void {
-        router.post( '/recipes/create', verifyToken, upload.array( 'files' ), this.recipeController.create );
+    public routes( app: any ): void {
+        app.post( '/api/recipes/create', verifyToken, upload.array( 'files' ), this.recipeController.create );
 
-        router.get( '/recipes', verifyToken, this.recipeController.getCurrentUsersRecipes );
+        app.get( '/api/recipes', verifyToken, this.recipeController.getCurrentUsersRecipes );
 
-        router.get( '/recipes/favourites', verifyToken, this.recipeController.getFavouriteRecipes );
+        app.get( '/api/recipes/favourites', verifyToken, this.recipeController.getFavouriteRecipes );
 
-        router.get( '/recipes/:id', verifyToken, this.recipeController.getRecipeById );
+        app.get( '/api/recipes/:id', verifyToken, this.recipeController.getRecipeById );
 
-        router.put( '/recipes/:id', verifyToken, this.recipeController.updateRecipeById );
+        app.put( '/api/recipes/:id', verifyToken, this.recipeController.updateRecipeById );
 
-        router.delete( '/recipes/:id', verifyToken, this.recipeController.deleteRecipeById );
+        app.delete( '/api/recipes/:id', verifyToken, this.recipeController.deleteRecipeById );
     }
 }
