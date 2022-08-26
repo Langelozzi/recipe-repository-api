@@ -31,6 +31,8 @@ class App {
         this.indexRoutes.routes( this.router );
         this.authRoutes.routes( this.router );
         this.recipeRoutes.routes( this.router );
+
+        this.router.get( '/test', ( req, res ) => { res.json( { 'test': 'successful' } );} );
         
         this.app.use( '/.netlify/functions/api', this.router );
     }
