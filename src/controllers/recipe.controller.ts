@@ -199,4 +199,9 @@ export class RecipeController {
             } );
         } );
     }
+
+    public async postDuplicateRecipe( req: Request, res: Response ) {
+        const recipe = await RecipeModel.findById( req.body.id );
+        const recipeObject = recipe?.toObject();
+    }
 }
