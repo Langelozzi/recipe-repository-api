@@ -200,8 +200,36 @@ export class RecipeController {
         } );
     }
 
-    public async postDuplicateRecipe( req: Request, res: Response ) {
-        const recipe = await RecipeModel.findById( req.body.id );
+    public async postDuplicateRecipeById( req: Request, res: Response ) {
+        const recipe = await RecipeModel.findById( req.params.id );
         const recipeObject = recipe?.toObject();
+        
+        // write me some logic to duplicate the recipe
+        const newRecipe = new RecipeModel( {
+            userId: recipeObject?.userId,
+            name: recipeObject?.name,
+            ingredients: recipeObject?.ingredients,
+            steps: recipeObject?.steps,
+            favourite: recipeObject?.favourite,
+            prepTime: recipeObject?.prepTime,
+            cookTime: recipeObject?.cookTime,
+            ovenTemp: recipeObject?.ovenTemp,
+            notes: recipeObject?.notes,
+            cuisine: recipeObject?.cuisine,
+            facts: recipeObject?.facts,
+            tags: recipeObject?.tags,
+            description: recipeObject?.description,
+            imageData: recipeObject?.imageData
+        } );
+
+        const savedRecipe = await newRecipe.save();
+        
+        res.status( 201 ).json( {
+            ok: true,
+            message: 'Recipe duplicated successfully',
+            recipe: savedRecipe
+        } );
+        
+        res.send("ok");
     }
 }

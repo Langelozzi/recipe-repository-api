@@ -20,5 +20,7 @@ export class RecipeRoutes {
         app.put( '/api/recipes/:id', verifyToken, this.recipeController.updateRecipeById );
 
         app.delete( '/api/recipes/:id', verifyToken, this.recipeController.deleteRecipeById );
+
+        app.post( '/api/recipes/:id/duplicate', verifyToken, this.recipeController.postDuplicateRecipeById );
     }
 }
