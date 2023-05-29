@@ -229,7 +229,5 @@ export class RecipeController {
             message: 'Recipe duplicated successfully',
             recipe: savedRecipe
         } );
-        
-        res.send("ok");
     }
 }
