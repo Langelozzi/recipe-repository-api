@@ -207,10 +207,10 @@ export class RecipeController {
         // write me some logic to duplicate the recipe
         const newRecipe = new RecipeModel( {
             userId: recipeObject?.userId,
-            name: recipeObject?.name,
+            name: `${recipeObject?.name} - Copy`,
             ingredients: recipeObject?.ingredients,
             steps: recipeObject?.steps,
-            favourite: recipeObject?.favourite,
+            favourite: false,
             prepTime: recipeObject?.prepTime,
             cookTime: recipeObject?.cookTime,
             ovenTemp: recipeObject?.ovenTemp,
