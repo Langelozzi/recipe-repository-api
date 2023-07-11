@@ -91,6 +91,20 @@ export class RecipeController {
         }
     }
 
+    public async getAllRecipes( req: Request, res: Response ) {
+        RecipeModel.find( {}, ( err: any, data: any ) => {
+            if ( err ) {
+                logger( err.message, undefined, 'No recipes found' );
+                res.send( err );
+            }
+
+            res.status( 200 ).json( {
+                ok: true,
+                recipes: data
+            } );
+        } );
+    }
+
     public async getCurrentUsersRecipes( req: Request, res: Response ) {
         const currentUser = await UserModel.findOne( { _id: req.user } );
 

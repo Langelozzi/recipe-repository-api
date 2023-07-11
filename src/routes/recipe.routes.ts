@@ -13,6 +13,8 @@ export class RecipeRoutes {
 
         app.get( '/api/recipes', verifyToken, this.recipeController.getCurrentUsersRecipes );
 
+        app.get( '/api/recipes/all', verifyToken, this.recipeController.getAllRecipes );
+
         app.get( '/api/recipes/favourites', verifyToken, this.recipeController.getFavouriteRecipes );
 
         app.get( '/api/recipes/:id', verifyToken, this.recipeController.getRecipeById );
