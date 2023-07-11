@@ -51,7 +51,7 @@ export class RecipeController {
             }
             
             // getting recipe information from request body
-            const { name, ingredients, steps, favourite, prepTime, cookTime, ovenTemp, notes, cuisine, facts, tags, description } = req.body;
+            const { name, ingredients, steps, favourite, prepTime, cookTime, ovenTemp, notes, cuisine, facts, tags, description, visibility } = req.body;
             
             
             // create new recipe
@@ -69,7 +69,8 @@ export class RecipeController {
                 facts,
                 tags,
                 description,
-                imageData
+                imageData,
+                visibility
             } );
 
             // save recipe and return it if no errors
@@ -219,7 +220,8 @@ export class RecipeController {
             facts: recipeObject?.facts,
             tags: recipeObject?.tags,
             description: recipeObject?.description,
-            imageData: recipeObject?.imageData
+            imageData: recipeObject?.imageData,
+            visibility: recipeObject?.visibility
         } );
 
         const savedRecipe = await newRecipe.save();
