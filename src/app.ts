@@ -26,7 +26,15 @@ class App {
 
     private config(): void {
         this.app.use(bodyParser.json());
-        this.app.use((req, res, next) => { next(); }, cors({}));
+        this.app.use(cors({
+            origin: [
+                'http://localhost:4200',
+                'https://recipe-repository-app.vercel.app'
+            ],
+            credentials: true,
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+            allowedHeaders: ['Content-Type', 'Authorization']
+        }));
     }
 }
 
