@@ -6,23 +6,25 @@ export class RecipeRoutes {
     recipeController: RecipeController = new RecipeController();
 
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    constructor() {}
+    constructor() { }
 
-    public routes( app: any ): void {
-        app.post( '/api/recipes/create', verifyToken, upload.array( 'files' ), this.recipeController.create );
+    public routes(app: any): void {
+        app.post('/api/recipes/create', verifyToken, upload.array('files'), this.recipeController.create);
 
-        app.get( '/api/recipes', verifyToken, this.recipeController.getCurrentUsersRecipes );
+        app.get('/api/recipes', verifyToken, this.recipeController.getCurrentUsersRecipes);
 
-        app.get( '/api/recipes/all', verifyToken, this.recipeController.getAllRecipes );
+        app.get('/api/recipes/all', verifyToken, this.recipeController.getAllRecipes);
 
-        app.get( '/api/recipes/favourites', verifyToken, this.recipeController.getFavouriteRecipes );
+        app.get('/api/recipes/public', this.recipeController.getPublicRecipes);
 
-        app.get( '/api/recipes/:id', verifyToken, this.recipeController.getRecipeById );
+        app.get('/api/recipes/favourites', verifyToken, this.recipeController.getFavouriteRecipes);
 
-        app.put( '/api/recipes/:id', verifyToken, this.recipeController.updateRecipeById );
+        app.get('/api/recipes/:id', verifyToken, this.recipeController.getRecipeById);
 
-        app.delete( '/api/recipes/:id', verifyToken, this.recipeController.deleteRecipeById );
+        app.put('/api/recipes/:id', verifyToken, this.recipeController.updateRecipeById);
 
-        app.post( '/api/recipes/:id/duplicate', verifyToken, this.recipeController.postDuplicateRecipeById );
+        app.delete('/api/recipes/:id', verifyToken, this.recipeController.deleteRecipeById);
+
+        app.post('/api/recipes/:id/duplicate', verifyToken, this.recipeController.postDuplicateRecipeById);
     }
 }
