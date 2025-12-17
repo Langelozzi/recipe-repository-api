@@ -119,6 +119,9 @@ export class RecipeController {
                     }
                 },
                 {
+                    $sort: { createdAt: -1 }
+                },
+                {
                     $project: {
                         userDetails: 0,
                         userIdObject: 0
@@ -174,6 +177,7 @@ export class RecipeController {
                         }
                     }
                 },
+                { $sort: { createdAt: -1 } },
                 { $project: { userDetails: 0, userIdObject: 0 } }
             );
 
@@ -227,6 +231,7 @@ export class RecipeController {
                         }
                     }
                 },
+                { $sort: { createdAt: -1 } },
                 {
                     $project: {
                         userDetails: 0,
@@ -413,6 +418,7 @@ export class RecipeController {
                         }
                     }
                 },
+                { $sort: { createdAt: -1 } },
                 {
                     $project: {
                         userDetails: 0,
