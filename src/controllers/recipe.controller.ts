@@ -2,9 +2,7 @@ import { RecipeModel } from '../models/recipe.model';
 import { Request, Response } from 'express';
 import { AuthController } from './auth.controller';
 import { UserModel } from '../models/user.model';
-import { readFile } from 'fs/promises';
 import { imagekit } from '../helpers/utils/createImageKit';
-import * as fs from 'fs';
 import { logger } from '../helpers/utils/logger';
 import mongoose from 'mongoose';
 
@@ -30,24 +28,18 @@ export class RecipeController {
                 });
 
                 for (const image of images) {
-                    // reading the file that was saved to the server file system
-                    const file = await readFile(image.path);
+                    // With memory storage, file is already in buffer (image.buffer)
+                    // No need to read from disk or clean up files
 
                     // uploading the image to the users imagekit folder
                     const uploadedImage = await imagekit.upload({
-                        file: file,
+                        file: image.buffer,
                         fileName: `${req.body.name}`,
                         folder: `${userId}`
                     });
 
                     // saving the image urls to the recipe attribute
                     imageData.push(uploadedImage);
-
-                    // removing the file from the server file system once it is uploaded
-                    if (fs.existsSync(image.path)) {
-                        fs.unlinkSync(image.path);
-                    }
-
                 }
             }
 
