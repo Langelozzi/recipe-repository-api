@@ -2,7 +2,6 @@
     "dependencies": {
         "@hapi/joi": "^17.1.1",
         "@typegoose/typegoose": "^9.10.1",
-        "argon2": "^0.28.7",
         "bcryptjs": "^2.4.3",
         "body-parser": "^1.20.0",
         "config": "^3.3.7",
