@@ -443,12 +443,13 @@ export class RecipeController {
     }
 
     public async postDuplicateRecipeById(req: Request, res: Response) {
+        const currentUser = await UserModel.findOne({ _id: req.user });
+
         const recipe = await RecipeModel.findById(req.params.id);
         const recipeObject = recipe?.toObject();
 
-        // write me some logic to duplicate the recipe
         const newRecipe = new RecipeModel({
-            userId: recipeObject?.userId,
+            userId: currentUser?._id?.toString(),
             name: `${recipeObject?.name} - Copy`,
             ingredients: recipeObject?.ingredients,
             steps: recipeObject?.steps,
