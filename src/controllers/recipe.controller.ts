@@ -6,6 +6,7 @@ import { readFile } from 'fs/promises';
 import { imagekit } from '../helpers/utils/createImageKit';
 import * as fs from 'fs';
 import { logger } from '../helpers/utils/logger';
+import mongoose from 'mongoose';
 
 
 export class RecipeController {
@@ -92,64 +93,227 @@ export class RecipeController {
     }
 
     public async getAllRecipes(req: Request, res: Response) {
-        RecipeModel.find({}, (err: any, data: any) => {
-            if (err) {
-                logger(err.message, undefined, 'No recipes found');
-                res.send(err);
-            }
+        try {
+            const recipes = await RecipeModel.aggregate([
+                {
+                    $addFields: {
+                        userIdObject: { $toObjectId: '$userId' }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userIdObject',
+                        foreignField: '_id',
+                        as: 'userDetails'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$userDetails',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $addFields: {
+                        user: {
+                            userId: '$userIdObject' as any,
+                            firstName: '$userDetails.firstName' as any,
+                            lastName: '$userDetails.lastName' as any,
+                            fullName: {
+                                $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                            } as any
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        userDetails: 0,
+                        userIdObject: 0
+                    }
+                }
+            ] as any);
 
             res.status(200).json({
                 ok: true,
-                recipes: data
+                recipes: recipes
             });
-        });
+        } catch (err: any) {
+            logger(err.message, undefined, 'No recipes found');
+            res.status(500).json({
+                ok: false,
+                message: err.message
+            });
+        }
     }
 
     public async getPublicRecipes(req: Request, res: Response) {
-        const currentUser = await UserModel.findOne({ _id: req.user });
+        try {
+            const currentUser = await UserModel.findOne({ _id: req.user });
 
-        RecipeModel.find({ visibility: 1, userId: { $ne: currentUser?._id } }, (err: any, data: any) => {
-            if (err) {
-                logger(err.message, undefined, 'No public recipes found');
-                res.send(err);
+            // Base pipeline: only public recipes
+            const pipeline: any[] = [
+                { $match: { visibility: 1 } },
+            ];
+
+            // If we know the current user, exclude their recipes
+            if (currentUser?._id) {
+                pipeline[0].$match.userId = { $ne: currentUser._id.toString() };
             }
 
-            res.status(200).json({
-                ok: true,
-                recipes: data
-            });
-        });
+            pipeline.push(
+                { $addFields: { userIdObject: { $toObjectId: '$userId' } } },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userIdObject',
+                        foreignField: '_id',
+                        as: 'userDetails'
+                    }
+                },
+                { $unwind: { path: '$userDetails', preserveNullAndEmptyArrays: true } },
+                {
+                    $addFields: {
+                        user: {
+                            userId: '$userIdObject' as any,
+                            firstName: '$userDetails.firstName' as any,
+                            lastName: '$userDetails.lastName' as any,
+                            fullName: { $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName'] } as any
+                        }
+                    }
+                },
+                { $project: { userDetails: 0, userIdObject: 0 } }
+            );
+
+            const recipes = await RecipeModel.aggregate(pipeline as any);
+
+            res.status(200).json({ ok: true, recipes });
+        } catch (err: any) {
+            logger(err.message, undefined, 'No public recipes found');
+            res.status(500).json({ ok: false, message: err.message });
+        }
     }
 
     public async getCurrentUsersRecipes(req: Request, res: Response) {
-        const currentUser = await UserModel.findOne({ _id: req.user });
+        try {
+            const currentUser = await UserModel.findOne({ _id: req.user });
 
-        RecipeModel.find({ userId: currentUser?._id }, (err: any, data: any) => {
-            if (err) {
-                logger(err.message, undefined, `No user with id ${currentUser?._id}`);
-                res.send(err);
-            }
+            const recipes = await RecipeModel.aggregate([
+                {
+                    $match: {
+                        userId: currentUser?._id?.toString()
+                    }
+                },
+                {
+                    $addFields: {
+                        userIdObject: { $toObjectId: '$userId' }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userIdObject',
+                        foreignField: '_id',
+                        as: 'userDetails'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$userDetails',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $addFields: {
+                        user: {
+                            userId: '$userIdObject' as any,
+                            firstName: '$userDetails.firstName' as any,
+                            lastName: '$userDetails.lastName' as any,
+                            fullName: {
+                                $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                            } as any
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        userDetails: 0,
+                        userIdObject: 0
+                    }
+                }
+            ] as any);
 
             res.status(200).json({
                 ok: true,
-                recipes: data
+                recipes: recipes
             });
-        });
-
+        } catch (err: any) {
+            logger(err.message, undefined, 'Failed to fetch user recipes');
+            res.status(500).json({
+                ok: false,
+                message: err.message
+            });
+        }
     }
 
     public async getRecipeById(req: Request, res: Response) {
-        RecipeModel.findById(req.params.id, (err: any, data: any) => {
-            if (err) {
-                logger(err.message, undefined, `No recipe with id ${req.params.id}`);
-                res.send(err);
-            }
+        try {
+            const recipes = await RecipeModel.aggregate([
+                {
+                    $match: {
+                        _id: new mongoose.Types.ObjectId(req.params.id)
+                    }
+                },
+                {
+                    $addFields: {
+                        userIdObject: { $toObjectId: '$userId' }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userIdObject',
+                        foreignField: '_id',
+                        as: 'userDetails'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$userDetails',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $addFields: {
+                        user: {
+                            userId: '$userIdObject' as any,
+                            firstName: '$userDetails.firstName' as any,
+                            lastName: '$userDetails.lastName' as any,
+                            fullName: {
+                                $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                            } as any
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        userDetails: 0,
+                        userIdObject: 0
+                    }
+                }
+            ] as any);
 
             res.status(200).json({
                 ok: true,
-                recipe: data
+                recipe: recipes[0]
             });
-        });
+        } catch (err: any) {
+            logger(err.message, undefined, `No recipe with id ${req.params.id}`);
+            res.status(500).json({
+                ok: false,
+                message: err.message
+            });
+        }
     }
 
     public async updateRecipeById(req: Request, res: Response) {
@@ -216,19 +380,66 @@ export class RecipeController {
     }
 
     public async getFavouriteRecipes(req: Request, res: Response) {
-        const currentUser = await UserModel.findOne({ _id: req.user });
+        try {
+            const currentUser = await UserModel.findOne({ _id: req.user });
 
-        RecipeModel.find({ userId: currentUser?._id, favourite: true }, (err: any, data: any) => {
-            if (err) {
-                logger(err.message, undefined, 'Failed to find favourite recipes');
-                res.send(err);
-            }
+            const recipes = await RecipeModel.aggregate([
+                {
+                    $match: {
+                        userId: currentUser?._id?.toString(),
+                        favourite: true
+                    }
+                },
+                {
+                    $addFields: {
+                        userIdObject: { $toObjectId: '$userId' }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'userIdObject',
+                        foreignField: '_id',
+                        as: 'userDetails'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$userDetails',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $addFields: {
+                        user: {
+                            userId: '$userIdObject' as any,
+                            firstName: '$userDetails.firstName' as any,
+                            lastName: '$userDetails.lastName' as any,
+                            fullName: {
+                                $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                            } as any
+                        }
+                    }
+                },
+                {
+                    $project: {
+                        userDetails: 0,
+                        userIdObject: 0
+                    }
+                }
+            ] as any);
 
             res.status(200).json({
                 ok: true,
-                recipes: data
+                recipes: recipes
             });
-        });
+        } catch (err: any) {
+            logger(err.message, undefined, 'Failed to find favourite recipes');
+            res.status(500).json({
+                ok: false,
+                message: err.message
+            });
+        }
     }
 
     public async postDuplicateRecipeById(req: Request, res: Response) {

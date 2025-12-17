@@ -31,6 +31,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RecipeController = void 0;
 const recipe_model_1 = require("../models/recipe.model");
@@ -40,6 +43,7 @@ const promises_1 = require("fs/promises");
 const createImageKit_1 = require("../helpers/utils/createImageKit");
 const fs = __importStar(require("fs"));
 const logger_1 = require("../helpers/utils/logger");
+const mongoose_1 = __importDefault(require("mongoose"));
 class RecipeController {
     constructor() {
         this.authController = new auth_controller_1.AuthController();
@@ -77,7 +81,7 @@ class RecipeController {
                     }
                 }
                 // getting recipe information from request body
-                const { name, ingredients, steps, favourite, prepTime, cookTime, ovenTemp, notes, cuisine, facts, tags, description } = req.body;
+                const { name, ingredients, steps, favourite, prepTime, cookTime, ovenTemp, notes, cuisine, facts, tags, description, visibility } = req.body;
                 // create new recipe
                 const newRecipe = new recipe_model_1.RecipeModel({
                     userId,
@@ -93,7 +97,8 @@ class RecipeController {
                     facts,
                     tags,
                     description,
-                    imageData
+                    imageData,
+                    visibility
                 });
                 // save recipe and return it if no errors
                 const savedRecipe = yield newRecipe.save();
@@ -112,33 +117,244 @@ class RecipeController {
             }
         });
     }
-    getCurrentUsersRecipes(req, res) {
+    getAllRecipes(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            const currentUser = yield user_model_1.UserModel.findOne({ _id: req.user });
-            recipe_model_1.RecipeModel.find({ userId: currentUser === null || currentUser === void 0 ? void 0 : currentUser._id }, (err, data) => {
-                if (err) {
-                    (0, logger_1.logger)(err.message, undefined, `No user with id ${currentUser === null || currentUser === void 0 ? void 0 : currentUser._id}`);
-                    res.send(err);
-                }
+            try {
+                const recipes = yield recipe_model_1.RecipeModel.aggregate([
+                    {
+                        $addFields: {
+                            userIdObject: { $toObjectId: '$userId' }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userIdObject',
+                            foreignField: '_id',
+                            as: 'userDetails'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$userDetails',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            user: {
+                                firstName: '$userDetails.firstName',
+                                lastName: '$userDetails.lastName',
+                                fullName: {
+                                    $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            userDetails: 0,
+                            userIdObject: 0
+                        }
+                    }
+                ]);
                 res.status(200).json({
                     ok: true,
-                    recipes: data
+                    recipes: recipes
                 });
-            });
+            }
+            catch (err) {
+                (0, logger_1.logger)(err.message, undefined, 'No recipes found');
+                res.status(500).json({
+                    ok: false,
+                    message: err.message
+                });
+            }
+        });
+    }
+    getPublicRecipes(req, res) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const currentUser = yield user_model_1.UserModel.findOne({ _id: req.user });
+                const recipes = yield recipe_model_1.RecipeModel.aggregate([
+                    {
+                        $match: {
+                            visibility: 1,
+                            userId: { $ne: (_a = currentUser === null || currentUser === void 0 ? void 0 : currentUser._id) === null || _a === void 0 ? void 0 : _a.toString() }
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userIdObject: { $toObjectId: '$userId' }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userIdObject',
+                            foreignField: '_id',
+                            as: 'userDetails'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$userDetails',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            user: {
+                                firstName: '$userDetails.firstName',
+                                lastName: '$userDetails.lastName',
+                                fullName: {
+                                    $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            userDetails: 0,
+                            userIdObject: 0
+                        }
+                    }
+                ]);
+                res.status(200).json({
+                    ok: true,
+                    recipes: recipes
+                });
+            }
+            catch (err) {
+                (0, logger_1.logger)(err.message, undefined, 'No public recipes found');
+                res.status(500).json({
+                    ok: false,
+                    message: err.message
+                });
+            }
+        });
+    }
+    getCurrentUsersRecipes(req, res) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const currentUser = yield user_model_1.UserModel.findOne({ _id: req.user });
+                const recipes = yield recipe_model_1.RecipeModel.aggregate([
+                    {
+                        $match: {
+                            userId: (_a = currentUser === null || currentUser === void 0 ? void 0 : currentUser._id) === null || _a === void 0 ? void 0 : _a.toString()
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userIdObject: { $toObjectId: '$userId' }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userIdObject',
+                            foreignField: '_id',
+                            as: 'userDetails'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$userDetails',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            user: {
+                                firstName: '$userDetails.firstName',
+                                lastName: '$userDetails.lastName',
+                                fullName: {
+                                    $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            userDetails: 0,
+                            userIdObject: 0
+                        }
+                    }
+                ]);
+                res.status(200).json({
+                    ok: true,
+                    recipes: recipes
+                });
+            }
+            catch (err) {
+                (0, logger_1.logger)(err.message, undefined, 'Failed to fetch user recipes');
+                res.status(500).json({
+                    ok: false,
+                    message: err.message
+                });
+            }
         });
     }
     getRecipeById(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
-            recipe_model_1.RecipeModel.findById(req.params.id, (err, data) => {
-                if (err) {
-                    (0, logger_1.logger)(err.message, undefined, `No recipe with id ${req.params.id}`);
-                    res.send(err);
-                }
+            try {
+                const recipes = yield recipe_model_1.RecipeModel.aggregate([
+                    {
+                        $match: {
+                            _id: new mongoose_1.default.Types.ObjectId(req.params.id)
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userIdObject: { $toObjectId: '$userId' }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userIdObject',
+                            foreignField: '_id',
+                            as: 'userDetails'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$userDetails',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            user: {
+                                firstName: '$userDetails.firstName',
+                                lastName: '$userDetails.lastName',
+                                fullName: {
+                                    $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            userDetails: 0,
+                            userIdObject: 0
+                        }
+                    }
+                ]);
                 res.status(200).json({
                     ok: true,
-                    recipe: data
+                    recipe: recipes[0]
                 });
-            });
+            }
+            catch (err) {
+                (0, logger_1.logger)(err.message, undefined, `No recipe with id ${req.params.id}`);
+                res.status(500).json({
+                    ok: false,
+                    message: err.message
+                });
+            }
         });
     }
     updateRecipeById(req, res) {
@@ -204,17 +420,95 @@ class RecipeController {
         });
     }
     getFavouriteRecipes(req, res) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            const currentUser = yield user_model_1.UserModel.findOne({ _id: req.user });
-            recipe_model_1.RecipeModel.find({ userId: currentUser === null || currentUser === void 0 ? void 0 : currentUser._id, favourite: true }, (err, data) => {
-                if (err) {
-                    (0, logger_1.logger)(err.message, undefined, 'Failed to find favourite recipes');
-                    res.send(err);
-                }
+            try {
+                const currentUser = yield user_model_1.UserModel.findOne({ _id: req.user });
+                const recipes = yield recipe_model_1.RecipeModel.aggregate([
+                    {
+                        $match: {
+                            userId: (_a = currentUser === null || currentUser === void 0 ? void 0 : currentUser._id) === null || _a === void 0 ? void 0 : _a.toString(),
+                            favourite: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            userIdObject: { $toObjectId: '$userId' }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userIdObject',
+                            foreignField: '_id',
+                            as: 'userDetails'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$userDetails',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $addFields: {
+                            user: {
+                                firstName: '$userDetails.firstName',
+                                lastName: '$userDetails.lastName',
+                                fullName: {
+                                    $concat: ['$userDetails.firstName', ' ', '$userDetails.lastName']
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            userDetails: 0,
+                            userIdObject: 0
+                        }
+                    }
+                ]);
                 res.status(200).json({
                     ok: true,
-                    recipes: data
+                    recipes: recipes
                 });
+            }
+            catch (err) {
+                (0, logger_1.logger)(err.message, undefined, 'Failed to find favourite recipes');
+                res.status(500).json({
+                    ok: false,
+                    message: err.message
+                });
+            }
+        });
+    }
+    postDuplicateRecipeById(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const recipe = yield recipe_model_1.RecipeModel.findById(req.params.id);
+            const recipeObject = recipe === null || recipe === void 0 ? void 0 : recipe.toObject();
+            // write me some logic to duplicate the recipe
+            const newRecipe = new recipe_model_1.RecipeModel({
+                userId: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.userId,
+                name: `${recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.name} - Copy`,
+                ingredients: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.ingredients,
+                steps: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.steps,
+                favourite: false,
+                prepTime: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.prepTime,
+                cookTime: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.cookTime,
+                ovenTemp: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.ovenTemp,
+                notes: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.notes,
+                cuisine: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.cuisine,
+                facts: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.facts,
+                tags: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.tags,
+                description: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.description,
+                imageData: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.imageData,
+                visibility: recipeObject === null || recipeObject === void 0 ? void 0 : recipeObject.visibility
+            });
+            const savedRecipe = yield newRecipe.save();
+            res.status(201).json({
+                ok: true,
+                message: 'Recipe duplicated successfully',
+                recipe: savedRecipe
             });
         });
     }

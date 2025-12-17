@@ -63,6 +63,11 @@ const RecipeSchema = new Schema({
     imageData: {
         type: Array,
         required: false
+    },
+    visibility: {
+        type: Number,
+        required: false,
+        default: 1
     }
 }, {
     timestamps: true,

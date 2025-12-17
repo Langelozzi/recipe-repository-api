@@ -15,7 +15,7 @@ export class RecipeRoutes {
 
         app.get('/api/recipes/all', verifyToken, this.recipeController.getAllRecipes);
 
-        app.get('/api/recipes/public', this.recipeController.getPublicRecipes);
+        app.get('/api/recipes/public', verifyToken, this.recipeController.getPublicRecipes);
 
         app.get('/api/recipes/favourites', verifyToken, this.recipeController.getFavouriteRecipes);
 
